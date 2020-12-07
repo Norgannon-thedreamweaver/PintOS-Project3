@@ -30,7 +30,7 @@ bool page_fault_handler(void *fault_addr);
 bool new_page_alloc (void *fault_addr) ;
 bool page_swap_in(struct page *p);
 void page_swap_out(struct page *p);
-void page_swap_out_clock();
+void page_swap_out_clock(void);
 
 unsigned page_hash (const struct hash_elem *e, void *aux);
 bool page_less (const struct hash_elem *a_, const struct hash_elem *b_,void *aux);

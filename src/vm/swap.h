@@ -12,7 +12,7 @@
 
 #define NO_SECTOR 4294967295U
 
-void swap_init ();
+void swap_init (void);
 void swap_in (struct page *);
 bool swap_out (struct page *);
 
