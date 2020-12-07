@@ -11,7 +11,6 @@ frame_init ()
     lock_init (&frame_lock);
     list_init(&frames);
     frames_ptr=NULL;
-    
 }
 
 struct frame *

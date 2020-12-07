@@ -37,11 +37,11 @@ swap_in (struct page *p)
     ASSERT (p->frame->thread==thread_current());
     ASSERT (p->sector != NO_SECTOR);
 
+    lock_acquire (&swap_lock);
     for (i=0;i<PAGE_SECTORS;i++){
         block_read (swap_device, p->sector + i,
                   p->frame->base + i * BLOCK_SECTOR_SIZE);
     }
-    lock_acquire (&swap_lock);
     bitmap_reset (swap_bitmap, p->sector / PAGE_SECTORS);
     p->sector = NO_SECTOR;
     lock_release (&swap_lock);
