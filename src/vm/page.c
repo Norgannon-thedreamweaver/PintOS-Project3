@@ -116,7 +116,7 @@ page_swap_in(struct page *p){
 
 bool
 page_fault_handler(void *fault_addr){
-  if(PHYS_BASE-STACK_PAGE_MAX*PGSIZE<pg_round_down(fault_addr))
+  if(PHYS_BASE-STACK_PAGE_MAX*PGSIZE>pg_round_down(fault_addr))
     return false;
   if (thread_current ()->pages == NULL)
     return false;
