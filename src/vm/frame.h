@@ -22,7 +22,7 @@ struct frame {
     struct list_elem elem;
 };
 
-void frame_init () ;
+void frame_init ();
 
 struct frame* frame_alloc();
 void frame_free(struct frame * f);

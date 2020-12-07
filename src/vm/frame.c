@@ -1,9 +1,9 @@
 #include "vm/frame.h"
 
-static struct list frames;
+struct list frames;
 struct list_elem* frames_ptr;
 
-static struct lock frame_lock;
+struct lock frame_lock;
 
 void
 frame_init () 

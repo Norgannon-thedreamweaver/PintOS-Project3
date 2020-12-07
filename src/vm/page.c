@@ -14,7 +14,7 @@
 #define STACK_PAGE_MAX 2048
 
 /* Destroys a page when process exit*/
-static void
+void
 destroy_page (struct hash_elem *p_, void *aux)
 {
   struct page *p = hash_entry (p_, struct page, hash_elem);
@@ -189,7 +189,7 @@ page_less (const struct hash_elem *a_, const struct hash_elem *b_,
    with palloc_get_page().
    Returns true on success, false if UPAGE is already mapped or
    if memory allocation fails. */
-static bool
+bool
 install_page (void *upage, void *kpage, bool writable)
 {
   struct thread *t = thread_current ();
@@ -202,7 +202,7 @@ install_page (void *upage, void *kpage, bool writable)
 
 /* delete a mapping from user virtual address UPAGE
 */
-static bool
+bool
 uninstall_page (void *vaddr)
 {
   void* upage=pg_round_down(vaddr);

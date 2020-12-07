@@ -1,12 +1,11 @@
 #include "vm/swap.h"
 
 /* swap device. */
-static struct block *swap_device;
+struct block *swap_device;
 
 /*bookkeeping of swap sectors */
-static struct bitmap *swap_bitmap;
-
-static struct lock swap_lock;
+struct bitmap *swap_bitmap;
+struct lock swap_lock;
 
 /* Number of sectors per page. */
 #define PAGE_SECTORS 8

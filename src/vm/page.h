@@ -22,7 +22,7 @@ struct page {
     off_t file_bytes;           /* Bytes to read/write, 1...PGSIZE. */
 };
 
-static void destroy_page (struct hash_elem *p_, void *aux);
+void destroy_page (struct hash_elem *p_, void *aux);
 void destroy_pages (struct thread *t);
 struct page* find_page_by_vaddr (const void *vaddr);
 struct page* page_alloc (void *vaddr, bool writable);
@@ -34,6 +34,6 @@ void page_swap_out_clock();
 
 unsigned page_hash (const struct hash_elem *e, void *aux);
 bool page_less (const struct hash_elem *a_, const struct hash_elem *b_,void *aux);
-static bool install_page (void *upage, void *kpage, bool writable);
-static bool uninstall_page (void *vaddr);
+bool install_page (void *upage, void *kpage, bool writable);
+bool uninstall_page (void *vaddr);
 #endif
