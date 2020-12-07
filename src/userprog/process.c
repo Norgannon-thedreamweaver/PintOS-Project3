@@ -75,6 +75,12 @@ start_process (void *file_name_)
   struct intr_frame if_;
   bool success;
 
+  current_thread->pages = (struct hash*)malloc (sizeof (struct hash));
+  if (current_thread->pages == NULL)
+    exit(-1);
+  hash_init (current_thread->pages, page_hash, page_less, NULL);
+
+
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
