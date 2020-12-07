@@ -393,7 +393,7 @@ get_process_file_by_fd(int fd){
 
 bool
 is_valid_addr(const void *vaddr){
-	if (!is_user_vaddr(vaddr) ){
+	if (!is_user_vaddr(vaddr)){
 		return false;
 	}
 	return true;

@@ -157,7 +157,7 @@ page_fault (struct intr_frame *f)
      body, and replace it with code that brings in the page to
      which fault_addr refers. */
 
-   if((fault_addr==NULL)||(!is_user_vaddr(fault_addr))||(fault_addr<0x8048000)||(f->esp-32>=fault_addr))
+   if((fault_addr==NULL)||(!is_user_vaddr(fault_addr))||(fault_addr<0x8048000))
       exit(-1);
    
    if(user&&not_present){
