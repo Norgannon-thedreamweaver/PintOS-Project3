@@ -63,9 +63,9 @@ void syscall_tell (struct intr_frame* f);
 void syscall_close (struct intr_frame* f);
 */
 struct process_file* get_process_file_by_fd(int fd);
-bool is_valid_addr(struct intr_frame* f,const void *vaddr);
-bool is_valid_buffer (struct intr_frame* f,void *vaddr, unsigned size);
-bool is_valid_string(struct intr_frame* f,void *str);
+bool is_valid_addr(const void *vaddr);
+bool is_valid_buffer (void *vaddr, unsigned size);
+bool is_valid_string(void *str);
 static int get_user (const uint8_t *uaddr);
 static bool put_user (uint8_t *udst, uint8_t byte);
 

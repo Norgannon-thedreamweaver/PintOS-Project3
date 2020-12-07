@@ -100,6 +100,7 @@ struct thread
     uint32_t *pagedir;                  /* Page directory. */
 #endif
     struct hash *pages;
+    void *esp_track;
 
     struct thread* parent;
     struct list_elem alive_child_elem;

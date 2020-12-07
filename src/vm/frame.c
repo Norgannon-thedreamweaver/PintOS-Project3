@@ -9,7 +9,6 @@ frame_init ()
 {
     list_init(&frames);
     lock_init (&frame_lock);
-    list_init(&frames);
     frames_ptr=NULL;
 }
 

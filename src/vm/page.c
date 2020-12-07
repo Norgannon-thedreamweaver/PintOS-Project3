@@ -45,7 +45,6 @@ find_page_by_vaddr (const void *vaddr){
   struct page p;
   struct hash_elem *elem;
 
-  /* Find existing page. */
   p.upage = (void *) pg_round_down (vaddr);
   elem = hash_find (thread_current ()->pages, &p.hash_elem);
   if (elem != NULL)
