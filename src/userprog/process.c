@@ -506,7 +506,7 @@ setup_stack (void **esp,char * file_name)
   if (success)
     *esp = PHYS_BASE-12;
   else
-    frame_free_page (kpage);
+     palloc_free_page (kpage);
 
   /*
   kpage = frame_get_page (PAL_USER | PAL_ZERO);

@@ -4,7 +4,6 @@ struct list frames;
 struct list_elem* frames_ptr;
 
 struct lock frame_lock;
-void frame_init () ;
 void
 frame_init () 
 {
