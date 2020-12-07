@@ -6,7 +6,7 @@ struct list_elem* frames_ptr;
 static struct lock frame_lock;
 
 void
-frame_init (void) 
+frame_init () 
 {
     list_init(&frames);
     lock_init (&frame_lock);
@@ -16,7 +16,7 @@ frame_init (void)
 }
 
 struct frame *
-frame_alloc(enum palloc_flags flags){
+frame_alloc(){
     struct frame *f = (struct frame *)malloc (sizeof(struct frame));
     if(f == NULL)
         PANIC ("OOM allocating frame table");
@@ -48,7 +48,7 @@ frame_free(struct frame * f){
 }
 
 struct frame *
-frame_find_victim(void *page){
+frame_find_victim(){
     lock_acquire (&frame_lock);
 
     struct list_elem* e;

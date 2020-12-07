@@ -13,7 +13,7 @@ static struct lock swap_lock;
 
 /* Sets up swap. */
 void
-swap_init (void)
+swap_init ()
 {    
     lock_init (&swap_lock);
     swap_device = block_get_role (BLOCK_SWAP);
@@ -28,8 +28,7 @@ swap_init (void)
       PANIC ("OOM allocating swap bitmap");
 }   
 
-/* Swaps in page P, which must have a locked frame
-   (and be swapped out). */
+/* Swaps in page P */
 void
 swap_in (struct page *p)
 {
@@ -37,7 +36,7 @@ swap_in (struct page *p)
 
     ASSERT (p->frame != NULL);
     ASSERT (p->frame->thread==thread_current());
-    ASSERT (p->sector != NULL);
+    ASSERT (p->sector != NO_SECTOR);
 
     for (i=0;i<PAGE_SECTORS;i++){
         block_read (swap_device, p->sector + i,
@@ -45,7 +44,7 @@ swap_in (struct page *p)
     }
     lock_acquire (&swap_lock);
     bitmap_reset (swap_bitmap, p->sector / PAGE_SECTORS);
-    p->sector = NULL;
+    p->sector = NO_SECTOR;
     lock_release (&swap_lock);
 }
 
@@ -74,4 +73,9 @@ swap_out (struct page *p)
     }
     lock_release (&swap_lock);
     return true;
+}
+
+
+void reset_swap_bitmap(block_sector_t sector){
+  bitmap_reset (swap_bitmap, sector / PAGE_SECTORS);
 }

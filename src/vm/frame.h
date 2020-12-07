@@ -22,9 +22,11 @@ struct frame {
     struct list_elem elem;
 };
 
+void frame_init () ;
 
+struct frame* frame_alloc();
+void frame_free(struct frame * f);
 
-void* frame_get_page(enum palloc_flags flags);
-void frame_free_page(void *page);
+struct frame* frame_find_victim();
 
 #endif

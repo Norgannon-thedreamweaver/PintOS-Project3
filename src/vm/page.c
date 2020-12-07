@@ -9,32 +9,35 @@
 #include "userprog/pagedir.h"
 #include "threads/vaddr.h"
 
-/* Maximum size of process stack, in bytes. */
+/* Maximum pages of stack, in bytes. */
 /* Right now it is 8 megabyte. */
 #define STACK_PAGE_MAX 2048
 
 /* Destroys a page when process exit*/
 static void
-destroy_page (struct hash_elem *p_, void *aux UNUSED)
+destroy_page (struct hash_elem *p_, void *aux)
 {
   struct page *p = hash_entry (p_, struct page, hash_elem);
   frame_lock (p);
   if (p->frame)
     frame_free (p->frame);
+  if(p->sector!=NO_SECTOR){
+    reset_swap_bitmap(p->sector);
+  }
   free (p);
 }
 
 /* Destroys page table when process exit */
 void
-destroy_pages (void)
+destroy_pages (struct thread* t)
 {
-  struct hash *h = thread_current ()->pages;
+  struct hash *h = t->pages;
   if (h != NULL)
     hash_destroy (h, destroy_page);
 }
 
 /* find page corresponding to VADDR in a process's pages */
-static struct page *
+struct page *
 find_page_by_vaddr (const void *vaddr){
   if (!is_user_vaddr(vaddr))
     return NULL;
@@ -49,53 +52,20 @@ find_page_by_vaddr (const void *vaddr){
     return hash_entry (elem, struct page, hash_elem);
   return NULL;
 }
-/* Returns the page containing the given virtual ADDRESS,
-   or a null pointer if no such page exists.
-   Allocates stack pages as necessary. */
-static struct page *
-page_for_addr (const void *address)
-{
-  if (address < PHYS_BASE)
-    {
-      struct page p;
-      struct hash_elem *e;
-
-      /* Find existing page. */
-      p.addr = (void *) pg_round_down (address);
-      e = hash_find (thread_current ()->pages, &p.hash_elem);
-      if (e != NULL)
-        return hash_entry (e, struct page, hash_elem);
-
-      /* -We need to determine if the program is attempting to access the stack.
-         -First, we ensure that the address is not beyond the bounds of the stack space (1 MB in this
-          case).
-         -As long as the user is attempting to acsess an address within 32 bytes (determined by the space
-          needed for a PUSHA command) of the stack pointers, we assume that the address is valid. In that
-          case, we should allocate one more stack page accordingly.
-      */
-      if ((p.addr > PHYS_BASE - STACK_MAX) && ((void *)thread_current()->user_esp - 32 < address))
-      {
-        return page_allocate (p.addr, false);
-      }
-    }
-
-  return NULL;
-}
-
 
 struct page *
-page_alloc (void *vaddr, bool read_only)
+page_alloc (void *vaddr, bool writable)
 {
   struct thread *t = thread_current ();
   struct page *p = malloc (sizeof(struct page));
   if(p == NULL)
-        PANIC ("OOM allocating page table");
+    PANIC ("OOM allocating page table");
   
   p->upage = pg_round_down (vaddr);
-  p->read_only = read_only;
+  p->writable=writable;
   p->thread = t;
   p->frame = NULL;
-  p->sector = NULL;
+  p->sector = NO_SECTOR;
   
   if (hash_insert (t->pages, &p->hash_elem) != NULL){
     /* Already mapped. */
@@ -105,24 +75,92 @@ page_alloc (void *vaddr, bool read_only)
   return p;
 }
 
-/* Evicts the page containing address VADDR
-   and removes it from the page table. */
-void
-page_deallocate (void *vaddr)
-{
-  struct page *p = page_for_addr (vaddr);
-  ASSERT (p != NULL);
-  frame_lock (p);
-  if (p->frame)
-    {
-      struct frame *f = p->frame;
-      if (p->file && !p->private)
-        page_out (p);
-      frame_free (f);
-    }
-  hash_delete (thread_current ()->pages, &p->hash_elem);
-  free (p);
+
+bool
+new_page_alloc (void *fault_addr) {
+  void* kpage=palloc_get_page(PAL_USER|PAL_ZERO);
+  while(kpage==NULL){
+    page_swap_out_clock();
+    kpage=palloc_get_page(PAL_USER|PAL_ZERO);
+  }
+
+  struct page* p=page_alloc(fault_addr,true);
+  struct frame *f=frame_alloc();
+  f->base=kpage;
+  f->page=p;
+  p->frame=f;
+  return install_page(p->upage,kpage,p->writable);
 }
+
+
+bool
+page_swap_in(struct page *p){
+  void* kpage=palloc_get_page(PAL_USER|PAL_ZERO);
+  while(kpage==NULL){
+    page_swap_out_clock();
+    kpage=palloc_get_page(PAL_USER|PAL_ZERO);
+  }
+  if(kpage!=NULL){
+    struct frame* f=frame_alloc();
+    f->base=kpage;
+    f->page=p;
+    p->frame=p;
+    install_page(p->upage,kpage,p->writable);
+    swap_in(p);
+    return true;
+  }
+  else{
+    printf("NO FRAME WHEN PAGE SWAP IN");
+    return false;
+  }
+}
+
+void
+page_fault_handler(void *fault_addr){
+  if(PHYS_BASE-STACK_PAGE_MAX*PGSIZE<pg_round_down(fault_addr))
+    return false;
+  if (thread_current ()->pages == NULL)
+    return false;
+
+  struct page *p=find_page_by_vaddr(fault_addr);
+
+  if (p == NULL){
+    return new_page_alloc(fault_addr);
+  }
+  else if(p->sector!=NO_SECTOR){
+    return page_swap_in(p);
+  }
+  else{
+    return false;
+  }
+}
+
+void
+page_swap_out(struct page *p){
+  ASSERT (p->frame != NULL);
+  ASSERT (p->frame->thread==thread_current());
+
+  bool dirty = pagedir_is_dirty (p->thread->pagedir, p->upage);
+
+  uninstall_page(p->upage);
+
+  if(swap_out(p)){
+    palloc_free_page (p->upage);
+    frame_free(p->frame);
+    p->frame=NULL;
+  }
+  else
+    PANIC("NO SWAP BLOCK");
+}
+
+void
+page_swap_out_clock(){
+  struct frame* victim=frame_find_victim();
+  if(victim==NULL)
+    PANIC("NO VICTIM");
+  page_swap_out(victim->page);
+}
+
 
 /* Returns a hash value for the page that E refers to. */
 unsigned

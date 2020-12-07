@@ -466,6 +466,8 @@ init_thread (struct thread *t, const char *name, int priority)
   t->priority = priority;
   t->magic = THREAD_MAGIC;
 
+  t->pages=NULL;
+
   list_init (&t->alive_children_list);
   list_init (&t->dead_children_list);
   t->parent = running_thread();

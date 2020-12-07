@@ -24,7 +24,7 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f) 
 {
-  if(!is_valid_buffer(f->esp,4)){
+  if(!is_valid_buffer(f,f->esp,4)){
     exit(-1);
     return;
   }
@@ -91,7 +91,7 @@ void exit (int status){
     current_thread->executable_file=NULL;
   }
     
-  
+  destroy_pages(current_thread);
   
   current_thread->exit_status = status;
   
@@ -234,7 +234,7 @@ void syscall_halt (struct intr_frame* f){
 }
 
 void syscall_exit (struct intr_frame* f){
-  if(!is_valid_buffer(f->esp+4,4)){
+  if(!is_valid_buffer(f,f->esp+4,4)){
     exit(-1);
   }
   int status = *(int *)(f->esp +4);
@@ -242,11 +242,11 @@ void syscall_exit (struct intr_frame* f){
 }
 
 void syscall_exec (struct intr_frame* f){
-  if(!is_valid_buffer(f->esp+4,4)){
+  if(!is_valid_buffer(f,f->esp+4,4)){
     exit(-1);
   }
   char *cmd_line = *(char **)(f->esp+4);
-  if(cmd_line==NULL || !is_valid_addr(cmd_line) || !is_valid_string(cmd_line)){
+  if(cmd_line==NULL || !is_valid_addr(f,cmd_line) || !is_valid_string(f,cmd_line)){
     exit(-1);
   }
   char *new_cmd = (char*)malloc(strlen(cmd_line) + 1);
@@ -257,7 +257,7 @@ void syscall_exec (struct intr_frame* f){
 }
 
 void syscall_wait (struct intr_frame* f){
-  if(!is_valid_buffer(f->esp+4,4)){
+  if(!is_valid_buffer(f,f->esp+4,4)){
     exit(-1);
   }
   pid_t pid = *(int *)(f->esp+4);
@@ -265,11 +265,11 @@ void syscall_wait (struct intr_frame* f){
 }
 
 void syscall_create (struct intr_frame* f){
-  if(!is_valid_buffer(f->esp+4,8)){
+  if(!is_valid_buffer(f,f->esp+4,8)){
     exit(-1);
   }
   char* file_name = *(char **)(f->esp+4);
-  if(file_name==NULL || !is_valid_addr(file_name) || !is_valid_string(file_name)){
+  if(file_name==NULL || !is_valid_addr(f,file_name) || !is_valid_string(f,file_name)){
     exit(-1);
   }
   unsigned size = *(int *)(f->esp+8);
@@ -279,11 +279,11 @@ void syscall_create (struct intr_frame* f){
 }
 
 void syscall_remove (struct intr_frame* f){
-  if(!is_valid_buffer(f->esp+4,4)){
+  if(!is_valid_buffer(f,f->esp+4,4)){
     exit(-1);
   }
   char* file_name = *(char **)(f->esp+4);
-  if(file_name==NULL || !is_valid_addr(file_name) || !is_valid_string(file_name)){
+  if(file_name==NULL || !is_valid_addr(f,file_name) || !is_valid_string(f,file_name)){
     exit(-1);
   }
   lock_acquire(&file_lock);
@@ -292,11 +292,11 @@ void syscall_remove (struct intr_frame* f){
 }
 
 void syscall_open (struct intr_frame* f){
-  if(!is_valid_buffer(f->esp+4,4)){
+  if(!is_valid_buffer(f,f->esp+4,4)){
     exit(-1);
   }
   char* file_name = *(char **)(f->esp+4);
-  if(file_name==NULL || !is_valid_addr(file_name) || !is_valid_string(file_name)){
+  if(file_name==NULL || !is_valid_addr(f,file_name) || !is_valid_string(f,file_name)){
     exit(-1);
   }
   lock_acquire(&file_lock);
@@ -305,7 +305,7 @@ void syscall_open (struct intr_frame* f){
 }
 
 void syscall_filesize (struct intr_frame* f){
-  if(!is_valid_buffer(f->esp+4,4)){
+  if(!is_valid_buffer(f,f->esp+4,4)){
     exit(-1);
   }
   int fd = *(int *)(f->esp + 4);
@@ -315,14 +315,14 @@ void syscall_filesize (struct intr_frame* f){
 }
 
 void syscall_read (struct intr_frame* f){
-  if(!is_valid_buffer(f->esp+4,12)){
+  if(!is_valid_buffer(f,f->esp+4,12)){
     exit(-1);
   }
   int fd = *(int *)(f->esp +4);
   void *buffer = *(char**)(f->esp + 8);
   unsigned size = *(unsigned *)(f->esp + 12);
 
-  if(!is_valid_buffer(buffer,size)){
+  if(!is_valid_buffer(f,buffer,size)){
     exit(-1);
   }
   lock_acquire(&file_lock);
@@ -331,14 +331,14 @@ void syscall_read (struct intr_frame* f){
 }
 
 void syscall_write (struct intr_frame* f){
-  if(!is_valid_buffer(f->esp+4,12)){
+  if(!is_valid_buffer(f,f->esp+4,12)){
     exit(-1);
   }
   int fd = *(int *)(f->esp +4);
   void *buffer = *(char**)(f->esp + 8);
   unsigned size = *(unsigned *)(f->esp + 12);
 
-  if(!is_valid_buffer(buffer,size)){
+  if(!is_valid_buffer(f,buffer,size)){
     exit(-1);
   }
   lock_acquire(&file_lock);
@@ -347,7 +347,7 @@ void syscall_write (struct intr_frame* f){
 }
 
 void syscall_seek (struct intr_frame* f){
-  if(!is_valid_buffer(f->esp+4,8)){
+  if(!is_valid_buffer(f,f->esp+4,8)){
     exit(-1);
   }
   int fd = *(int *)(f->esp + 4);
@@ -358,7 +358,7 @@ void syscall_seek (struct intr_frame* f){
 }
 
 void syscall_tell (struct intr_frame* f){
-  if(!is_valid_buffer(f->esp+4,4)){
+  if(!is_valid_buffer(f,f->esp+4,4)){
     exit(-1);
   }
   int fd = *(int *)(f->esp +4);
@@ -368,7 +368,7 @@ void syscall_tell (struct intr_frame* f){
 }
 
 void syscall_close (struct intr_frame* f){
-  if(!is_valid_buffer(f->esp+4,4)){
+  if(!is_valid_buffer(f,f->esp+4,4)){
     exit(-1);
   }
   int fd = *(int *)(f->esp +4);
@@ -392,20 +392,25 @@ get_process_file_by_fd(int fd){
 }
 
 bool
-is_valid_addr(const void *vaddr){
-	if (!is_user_vaddr(vaddr) || !(pagedir_get_page(thread_current()->pagedir, vaddr))){
-		return false;
-	}
+is_valid_addr(struct intr_frame* f,const void *vaddr){
+  if(vaddr==NULL)
+    return false;
+  if(!is_user_vaddr(vaddr))
+    return false;
+  if(vaddr<0x8048000)
+    return false;
+  if(f->esp-32>=vaddr)
+    return false;
 	return true;
 }
 
 bool
-is_valid_buffer (void *vaddr, unsigned size)
+is_valid_buffer (struct intr_frame* f,void *vaddr, unsigned size)
 {
   unsigned i;
   char* tmp=vaddr;
   for (i = 0; i < size; i++){
-    if(!is_valid_addr(tmp)){
+    if(!is_valid_addr(f,tmp)){
       return false;
     }
     tmp++;
@@ -414,11 +419,11 @@ is_valid_buffer (void *vaddr, unsigned size)
 }
 
 bool 
-is_valid_string(void *str){
+is_valid_string(struct intr_frame* f,void *str){
   int ch=-1;
   char* tmp=str;
   while(1){
-    if(!is_valid_addr(tmp))
+    if(!is_valid_addr(f,tmp))
       return false;
     ch=get_user((uint8_t*)tmp);
     if(ch==-1||ch=='\0')

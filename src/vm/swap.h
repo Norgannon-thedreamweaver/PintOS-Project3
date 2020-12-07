@@ -10,8 +10,11 @@
 #include "threads/vaddr.h"
 #include <stdbool.h>
 
-void swap_init (void);
+#define NO_SECTOR 4294967295U
+
+void swap_init ();
 void swap_in (struct page *);
 bool swap_out (struct page *);
 
+void reset_swap_bitmap(block_sector_t sector);
 #endif
