@@ -583,7 +583,7 @@ setup_stack (void **esp,char * file_name)
    Returns true on success, false if UPAGE is already mapped or
    if memory allocation fails. */
 static bool
-install_page (void *upage, void *kpage, bool writable)
+install_page__ (void *upage, void *kpage, bool writable)
 {
   struct thread *t = thread_current ();
 
