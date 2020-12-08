@@ -125,28 +125,36 @@ process_wait (tid_t child_tid)
   enum intr_level old_level = intr_disable();
   struct thread_exit_status *dead_thread=find_dead_child_thread(child_tid);
   struct thread *alive_child_thread= find_alive_child_thread(child_tid);
-  intr_set_level (old_level);
 
   if(dead_thread!=NULL){
     list_remove(&dead_thread->child_elem);
     ret=dead_thread->exit_status;
     free(dead_thread);
+    intr_set_level (old_level);
     return ret;
   }
 
-  if(alive_child_thread==NULL)
+  if(alive_child_thread==NULL){
+    intr_set_level (old_level);
     return -1;
+  }
 
   current_thread->waiting_tid = child_tid;
+  intr_set_level (old_level);
+
   sema_down(&current_thread->waiting_sema);
 
+  old_level = intr_disable();
   dead_thread=find_dead_child_thread(child_tid);
-  if(dead_thread==NULL)
+  if(dead_thread==NULL){
+    intr_set_level (old_level);
     return -1;
+  }
 
   list_remove(&dead_thread->child_elem);
   ret=dead_thread->exit_status;
   free(dead_thread);
+  intr_set_level (old_level);
   return ret;
 }
 
@@ -164,6 +172,7 @@ process_exit (void)
   if (current_thread->parent!=NULL && current_thread->parent->waiting_tid == current_thread->tid){
     sema_up(&current_thread->parent->waiting_sema);
   }
+  destroy_pages(current_thread);
   if (pd != NULL) 
     {
       /* Correct ordering here is crucial.  We must set
@@ -472,27 +481,38 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
-      /* Get a page of memory. */
-      uint8_t *kpage = palloc_get_page (PAL_USER);
-      if (kpage == NULL)
+      struct page* p=page_alloc(upage,writable);
+      if (p == NULL)
         return false;
+      if (page_read_bytes > 0) {
+        p->file = file;
+        p->file_offset = ofs;
+        p->file_bytes = page_read_bytes;
+      }
 
-      /* Load this page. */
-      if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
-        {
-          palloc_free_page (kpage);
-          return false; 
-        }
-      memset (kpage + page_read_bytes, 0, page_zero_bytes);
 
-      /* Add the page to the process's address space. */
-      if (!install_page (upage, kpage, writable)) 
-        {
-          palloc_free_page (kpage);
-          return false; 
-        }
-
-      /* Advance. */
+      ///* Get a page of memory. */
+      //uint8_t *kpage = palloc_get_page (PAL_USER);
+      //if (kpage == NULL)
+      //  return false;
+//
+      ///* Load this page. */
+      //if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
+      //  {
+      //    palloc_free_page (kpage);
+      //    return false; 
+      //  }
+      //memset (kpage + page_read_bytes, 0, page_zero_bytes);
+//
+      ///* Add the page to the process's address space. */
+      //if (!install_page (upage, kpage, writable)) 
+      //  {
+      //    palloc_free_page (kpage);
+      //    return false; 
+      //  }
+      //
+      ///* Advance. */
+      ofs += page_read_bytes;
       read_bytes -= page_read_bytes;
       zero_bytes -= page_zero_bytes;
       upage += PGSIZE;

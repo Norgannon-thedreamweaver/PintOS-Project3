@@ -65,6 +65,9 @@ page_alloc (void *vaddr, bool writable)
   p->thread = t;
   p->frame = NULL;
   p->sector = NO_SECTOR;
+  p->file=NULL;
+  p->file_bytes=0;
+  p->file_offset=0;
   
   if (hash_insert (t->pages, &p->hash_elem) != NULL){
     /* Already mapped. */
@@ -99,19 +102,26 @@ page_swap_in(struct page *p){
     page_swap_out_clock();
     kpage=palloc_get_page(PAL_USER|PAL_ZERO);
   }
-  if(kpage!=NULL){
-    struct frame* f=frame_alloc();
-    f->base=kpage;
-    f->page=p;
-    p->frame=p;
-    install_page(p->upage,kpage,p->writable);
+  struct frame* f=frame_alloc();
+  f->base=kpage;
+  f->page=p;
+  p->frame=f;
+  install_page(p->upage,kpage,p->writable);
+  
+  if(p->sector!=NO_SECTOR){
     swap_in(p);
     return true;
   }
-  else{
-    printf("NO FRAME WHEN PAGE SWAP IN");
-    return false;
+  else if(p->file!=NULL){
+    off_t read_bytes = file_read_at (p->file, p->frame->base,p->file_bytes, p->file_offset);
+    memset (p->frame->base + read_bytes, 0, PGSIZE - read_bytes);
+    if (read_bytes != p->file_bytes)
+      return false;
   }
+  else{
+    memset (p->frame->base, 0, PGSIZE);
+  }
+  return true;
 }
 
 bool
@@ -128,11 +138,11 @@ page_fault_handler(void *fault_addr){
   if (p == NULL){
     return new_page_alloc(fault_addr);
   }
-  else if(p->sector!=NO_SECTOR){
+  else if(p->frame==NULL){
     return page_swap_in(p);
   }
   else{
-    return false;
+    return install_page(p->upage,p->frame->base,p->writable);
   }
 }
 

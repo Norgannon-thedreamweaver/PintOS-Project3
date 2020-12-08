@@ -393,8 +393,12 @@ get_process_file_by_fd(int fd){
 
 bool
 is_valid_addr(const void *vaddr){
-	if (!is_user_vaddr(vaddr)){
-		return false;
+  if((vaddr==NULL)||(!is_user_vaddr(vaddr))||(vaddr<0x8048000))
+    return false;
+	if (!(pagedir_get_page(thread_current()->pagedir, vaddr))){
+    if (!page_fault_handler(vaddr))
+      exit(-1);
+		return true;
 	}
 	return true;
 }

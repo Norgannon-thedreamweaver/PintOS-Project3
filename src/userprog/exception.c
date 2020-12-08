@@ -157,15 +157,16 @@ page_fault (struct intr_frame *f)
      body, and replace it with code that brings in the page to
      which fault_addr refers. */
 
+/*
    if((fault_addr==NULL)||(!is_user_vaddr(fault_addr))||(fault_addr<0x8048000))
-      exit(-1);
+      exit(-1);*/
    
-   if(user&&not_present){
+   if(not_present){
       if (!page_fault_handler(fault_addr))
         exit(-1);
       return;
    }
-   
+   exit(-1);
   printf ("Page fault at %p: %s error %s page in %s context.\n",
           fault_addr,
           not_present ? "not present" : "rights violation",
