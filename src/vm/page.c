@@ -18,7 +18,6 @@ void
 destroy_page (struct hash_elem *p_, void *aux)
 {
   struct page *p = hash_entry (p_, struct page, hash_elem);
-  frame_lock (p);
   if (p->frame)
     frame_free (p->frame);
   if(p->sector!=NO_SECTOR){
@@ -126,16 +125,16 @@ page_swap_in(struct page *p){
 
 bool
 page_fault_handler(void *fault_addr){
-  if(PHYS_BASE-STACK_PAGE_MAX*PGSIZE>pg_round_down(fault_addr))
-    return false;
-  if((void *)thread_current()->esp_track - 32 >= fault_addr)
-    return false;
   if (thread_current ()->pages == NULL)
     return false;
 
   struct page *p=find_page_by_vaddr(fault_addr);
 
   if (p == NULL){
+    if(PHYS_BASE-STACK_PAGE_MAX*PGSIZE>pg_round_down(fault_addr))
+      return false;
+    if((void *)thread_current()->esp_track - 32 >= fault_addr)
+      return false;
     return new_page_alloc(fault_addr);
   }
   else if(p->frame==NULL){
