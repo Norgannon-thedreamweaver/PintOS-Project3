@@ -77,7 +77,7 @@ page_alloc (void *vaddr, bool writable)
 }
 void
 page_free(void *vaddr){
-  struct page *p = malloc (sizeof(struct page));
+  struct page *p = find_page_by_vaddr(vaddr);
   if(p==NULL)
     return;
 

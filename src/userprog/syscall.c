@@ -291,13 +291,14 @@ munmap (mapid_t mapid){
     exit(-1);
   }
 
-  for(int i;i<pm->page_cnt;i++){
+  int i;
+  for(i=0;i<pm->page_cnt;i++){
     if(pagedir_is_dirty(thread_current()->pagedir, pm->base + (PGSIZE * i))){
       file_write_at(pm->file, pm->base + (PGSIZE * i), PGSIZE, PGSIZE * i);
     }
   }
 
-  for(int i;i<pm->page_cnt;i++){
+  for(i=0;i<pm->page_cnt;i++){
     page_free(pm->base + (PGSIZE * i));
   }
   list_remove(&pm->elem);
