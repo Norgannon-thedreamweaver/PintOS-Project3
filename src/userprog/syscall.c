@@ -91,6 +91,10 @@ void exit (int status){
   
   for (tmp = list_begin (&current_thread->file_list); tmp != list_end (&current_thread->file_list); tmp = list_begin (&current_thread->file_list))
     close (list_entry (tmp, struct process_file,elem)->fd);
+
+  for (tmp = list_begin (&current_thread->mapping_list); tmp != list_end (&current_thread->mapping_list); tmp = list_begin (&current_thread->mapping_list))
+    munmap (list_entry (tmp, struct process_mapping,elem)->mapid);
+
   if(current_thread->executable_file!=NULL){
     file_close(current_thread->executable_file);
     current_thread->executable_file=NULL;
@@ -237,25 +241,25 @@ mmap (int fd, void *addr){
   struct thread *current_thread = thread_current();
   struct process_file *pf = get_process_file_by_fd(fd);
   if(pf == NULL || pf->file==NULL){
-    exit(-1);
+    return -1;
   }
   if(addr==NULL || pg_ofs (addr) != 0){
-    exit(-1);
+    return -1;
   }
   struct process_mapping *map =(struct process_mapping *) malloc (sizeof(struct process_mapping));
   if(map==NULL){
-    exit(-1);
+    return -1;
   }
   map->file = file_reopen (pf->file);
   if(map->file ==NULL){
     free (map);
-    exit(-1);
+    return -1;
   }
   size_t offset=0;
   off_t length= file_length (map->file);
   if(length==0){
     free (map);
-    exit(-1);
+    return -1;
   }
 
   map->mapid=current_thread->max_mapid++;
@@ -266,7 +270,7 @@ mmap (int fd, void *addr){
     struct page* p=page_alloc(addr + offset,true);
     if (p == NULL){
       free (map);
-      exit(-1);
+      return -1;
     }
     
     p->file = map->file;
@@ -288,7 +292,7 @@ void
 munmap (mapid_t mapid){
   struct process_mapping* pm=get_process_mapping_by_mapid(mapid);
   if(pm == NULL||pm->file==NULL){
-    exit(-1);
+    return -1;
   }
 
   int i;
@@ -302,6 +306,7 @@ munmap (mapid_t mapid){
     page_free(pm->base + (PGSIZE * i));
   }
   list_remove(&pm->elem);
+  free(pm);
 }
 //↓ real system call function
 

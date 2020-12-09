@@ -528,14 +528,13 @@ setup_stack (void **esp,char * file_name)
   uint8_t *kpage;
   bool success = false;
 
-/*
-  success=new_page_alloc(((uint8_t *) PHYS_BASE) - PGSIZE);
+  success=new_page_alloc(PHYS_BASE- PGSIZE);
   if (success)
     *esp = PHYS_BASE-12;
   else
-     palloc_free_page (kpage);
-  */
+     PANIC("FAIL allocating first page for stack");
 
+/*
   kpage = palloc_get_page (PAL_USER | PAL_ZERO);
   if (kpage != NULL) {
     success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
@@ -543,7 +542,7 @@ setup_stack (void **esp,char * file_name)
       *esp = PHYS_BASE-12;
     else
       palloc_free_page (kpage);
-  }
+  }*/
   
 
   //new lines ↓
