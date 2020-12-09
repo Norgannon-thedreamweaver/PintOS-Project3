@@ -73,6 +73,7 @@ void syscall_tell (struct intr_frame* f);
 void syscall_close (struct intr_frame* f);
 */
 struct process_file* get_process_file_by_fd(int fd);
+struct process_mapping* get_process_mapping_by_mapid(mapid_t mapid);
 bool is_valid_addr(const void *vaddr);
 bool is_valid_buffer (void *vaddr, unsigned size);
 bool is_valid_string(void *str);
