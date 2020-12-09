@@ -76,5 +76,7 @@ swap_out (struct page *p)
 
 
 void reset_swap_bitmap(block_sector_t sector){
+  lock_acquire (&swap_lock);
   bitmap_reset (swap_bitmap, sector / PAGE_SECTORS);
+  lock_release (&swap_lock);
 }

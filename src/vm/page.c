@@ -126,7 +126,9 @@ page_swap_in(struct page *p){
     return true;
   }
   else if(p->file!=NULL){
+    lock_acquire(&file_lock);
     off_t read_bytes = file_read_at (p->file, p->frame->base,p->file_bytes, p->file_offset);
+    lock_release(&file_lock);
     memset (p->frame->base + read_bytes, 0, PGSIZE - read_bytes);
     if (read_bytes != p->file_bytes)
       return false;
@@ -167,7 +169,14 @@ page_swap_out(struct page *p){
   bool dirty = pagedir_is_dirty (p->thread->pagedir, p->upage);
 
   uninstall_page(p->upage);
-
+  if(dirty && p->file!=NULL){
+    lock_acquire(&file_lock);
+    file_write_at(p->file,p->frame->base, p->file_bytes, p->file_offset);
+    lock_release(&file_lock);
+    palloc_free_page (p->upage);
+    frame_free(p->frame);
+    p->frame=NULL;
+  }
   if(swap_out(p)){
     palloc_free_page (p->upage);
     frame_free(p->frame);
