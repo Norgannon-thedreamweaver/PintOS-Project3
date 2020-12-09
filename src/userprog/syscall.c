@@ -458,7 +458,7 @@ void syscall_mmap (struct intr_frame* f){
     exit(-1);
   }
   int fd = *(int *)(f->esp +4);
-  void* addr = (void *)(f->esp +8);
+  void* addr = *(void **)(f->esp +8);
   lock_acquire(&file_lock);
   f->eax =mmap(fd,addr);
   lock_release(&file_lock);
