@@ -294,6 +294,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   process_activate ();
 
   /* Open executable file. */
+
   char *real_file_name = malloc(strlen(file_name) + 1);
   strlcpy(real_file_name, file_name, strlen(file_name) + 1);
   char *save_ptr;

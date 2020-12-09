@@ -333,8 +333,10 @@ void syscall_exec (struct intr_frame* f){
   char *new_cmd = (char*)malloc(strlen(cmd_line) + 1);
   strlcpy(new_cmd, cmd_line, strlen(cmd_line) + 1);
 
+  lock_acquire(&file_lock);
   f->eax = exec(new_cmd);
   free(new_cmd);
+  lock_release(&file_lock);
 }
 
 void syscall_wait (struct intr_frame* f){
