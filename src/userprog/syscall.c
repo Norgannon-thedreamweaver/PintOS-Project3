@@ -70,7 +70,12 @@ syscall_handler (struct intr_frame *f)
     case SYS_CLOSE:
       syscall_close(f); 
       break;
-
+    case SYS_MMAP:
+      syscall_mmap(f);
+      break;
+    case SYS_MUNMAP:
+      syscall_munmap(f);
+      break;
     default:
       exit(-1);
   }
@@ -227,6 +232,76 @@ void close (int fd){
   free (pf);
 }
 
+mapid_t
+mmap (int fd, void *addr){
+  struct thread *current_thread = thread_current();
+  struct process_file *pf = get_process_file_by_fd(fd);
+  if(pf == NULL || pf->file==NULL){
+    exit(-1);
+  }
+  if(addr==NULL || pg_ofs (addr) != 0){
+    exit(-1);
+  }
+  struct process_mapping *map =(struct process_mapping *) malloc (sizeof(struct process_mapping));
+  if(map==NULL){
+    exit(-1);
+  }
+  map->file = file_reopen (pf->file);
+  if(map->file ==NULL){
+    free (map);
+    exit(-1);
+  }
+  size_t offset=0;
+  off_t length= file_length (map->file);
+  if(length==0){
+    free (map);
+    exit(-1);
+  }
+
+  map->mapid=current_thread->max_mapid++;
+  current_thread->map_cnt++;
+  map->base=addr;
+  map->page_cnt=0;
+  while(length>0){
+    struct page* p=page_alloc(addr + offset,true);
+    if (p == NULL){
+      free (map);
+      exit(-1);
+    }
+    
+    p->file = map->file;
+    p->file_offset = offset;
+    if(length >= PGSIZE)
+      p->file_bytes=PGSIZE;
+    else
+      p->file_bytes=length;
+    
+    offset += p->file_bytes;
+    length -= p->file_bytes;
+    map->page_cnt++;
+  }
+  list_push_back(&current_thread->mapping_list,&map->elem);
+  return map->mapid;
+}
+
+void
+munmap (mapid_t mapid){
+  struct process_mapping* pm=get_process_mapping_by_mapid(mapid);
+  if(pm == NULL||pm->file==NULL){
+    exit(-1);
+  }
+
+  for(int i;i<pm->page_cnt;i++){
+    if(pagedir_is_dirty(thread_current()->pagedir, pm->base + (PGSIZE * i))){
+      file_write_at(pm->file, pm->base + (PGSIZE * i), PGSIZE, PGSIZE * i);
+    }
+  }
+
+  for(int i;i<pm->page_cnt;i++){
+    page_free(pm->base + (PGSIZE * i));
+  }
+  list_remove(&pm->elem);
+}
 //↓ real system call function
 
 void syscall_halt (struct intr_frame* f){
@@ -378,6 +453,27 @@ void syscall_close (struct intr_frame* f){
   
 }
 
+void syscall_mmap (struct intr_frame* f){
+  if(!is_valid_buffer(f->esp+4,8)){
+    exit(-1);
+  }
+  int fd = *(int *)(f->esp +4);
+  void* addr = (void *)(f->esp +8);
+  lock_acquire(&file_lock);
+  f->eax =mmap(fd,addr);
+  lock_release(&file_lock);
+  
+}
+
+void syscall_munmap (struct intr_frame* f){
+  if(!is_valid_buffer(f->esp+4,4)){
+    exit(-1);
+  }
+  mapid_t mapid = *(int *)(f->esp +4);
+  lock_acquire(&file_lock);
+  munmap(mapid);
+  lock_release(&file_lock);
+}
 
 
 struct process_file*
@@ -387,6 +483,17 @@ get_process_file_by_fd(int fd){
   for (tmp = list_begin (&current_thread->file_list); tmp != list_end (&current_thread->file_list); tmp = list_next (tmp)){
     if(list_entry (tmp, struct process_file, elem)->fd== fd)
       return list_entry (tmp, struct process_file, elem);
+  }
+  return NULL;
+}
+
+struct process_mapping*
+get_process_mapping_by_mapid(mapid_t mapid){
+  struct thread *current_thread=thread_current ();
+  struct list_elem *tmp;
+  for (tmp = list_begin (&current_thread->mapping_list); tmp != list_end (&current_thread->mapping_list); tmp = list_next (tmp)){
+    if(list_entry (tmp, struct process_mapping, elem)->mapid== mapid)
+      return list_entry (tmp, struct process_mapping, elem);
   }
   return NULL;
 }

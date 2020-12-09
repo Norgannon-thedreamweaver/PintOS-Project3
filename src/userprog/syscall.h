@@ -30,6 +30,14 @@ struct process_file{
     struct list_elem elem;
 };
 
+struct process_mapping{
+    int mapid;
+    struct file *file;
+    void *base;
+    size_t page_cnt;
+    struct list_elem elem;
+};
+
 struct lock file_lock;
 
 
@@ -47,6 +55,8 @@ int write (int fd, const void *buffer, unsigned length);
 void seek (int fd, unsigned position);
 unsigned tell (int fd);
 void close (int fd);
+mapid_t mmap (int fd, void *addr);
+void munmap (mapid_t);
 /*
 void syscall_halt (struct intr_frame* f);
 void syscall_exit (struct intr_frame* f);

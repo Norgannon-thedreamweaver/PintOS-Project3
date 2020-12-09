@@ -476,8 +476,11 @@ init_thread (struct thread *t, const char *name, int priority)
   t->exit_status=0;
 
   list_init (&t->file_list);
+  list_init (&t->mapping_list);
   t->file_open=0;
   t->max_fd=2;
+  t->map_cnt=0;
+  t->max_mapid=0;
   t->executable_file=NULL;
 
   sema_init(&t->child_load,0);

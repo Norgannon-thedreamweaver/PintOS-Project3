@@ -114,7 +114,10 @@ struct thread
 
     int file_open;
     int max_fd;
+    int map_cnt;
+    int max_mapid;
     struct list file_list;
+    struct list mapping_list;
     struct file* executable_file;
 
     struct semaphore child_load;

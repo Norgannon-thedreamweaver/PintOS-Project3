@@ -28,6 +28,7 @@ void destroy_page (struct hash_elem *p_, void *aux);
 void destroy_pages (struct thread *t);
 struct page* find_page_by_vaddr (const void *vaddr);
 struct page* page_alloc (void *vaddr, bool writable);
+void page_free(void *vaddr);
 bool page_fault_handler(void *fault_addr);
 bool new_page_alloc (void *fault_addr) ;
 bool page_swap_in(struct page *p);

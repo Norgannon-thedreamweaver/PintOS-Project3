@@ -75,7 +75,21 @@ page_alloc (void *vaddr, bool writable)
   }
   return p;
 }
+void
+page_free(void *vaddr){
+  struct page *p = malloc (sizeof(struct page));
+  if(p==NULL)
+    return;
 
+  uninstall_page(p->upage);
+  if (p->frame)
+    frame_free (p->frame);
+  if(p->sector!=NO_SECTOR){
+    reset_swap_bitmap(p->sector);
+  }
+  hash_delete(thread_current()->pages,&p->hash_elem);
+  free(p);
+}
 
 bool
 new_page_alloc (void *fault_addr) {
