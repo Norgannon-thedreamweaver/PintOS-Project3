@@ -531,7 +531,7 @@ setup_stack (void **esp,char * file_name)
 
   success=new_page_alloc(PHYS_BASE- PGSIZE);
   if (success)
-    *esp = PHYS_BASE-12;
+    *esp = PHYS_BASE;
   else
      PANIC("FAIL allocating first page for stack");
 
@@ -558,6 +558,8 @@ setup_stack (void **esp,char * file_name)
     if(file_name[i]==' ' && file_name[i-1]!=' ')
     argc++;
   }
+  if(file_name[file_name_len-1]==' ')
+    argc--;
   //Split file_name and push them into stack
   char **argv = calloc(argc+1,sizeof(char*));
   for(token = strtok_r (file_name, " ", &save_ptr),i=0; token != NULL;token = strtok_r (NULL, " ", &save_ptr),i++){
