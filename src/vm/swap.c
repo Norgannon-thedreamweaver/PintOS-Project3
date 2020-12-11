@@ -55,7 +55,7 @@ swap_out (struct page *p)
     size_t i;
 
     ASSERT (p->frame != NULL);
-    ASSERT (p->frame->thread==thread_current());
+    //ASSERT (p->frame->thread==thread_current());
 
     lock_acquire (&swap_lock);
     swap_sector = bitmap_scan_and_flip (swap_bitmap, 0, 1, false);
