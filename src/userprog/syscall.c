@@ -272,7 +272,7 @@ mmap (int fd, void *addr){
       free (map);
       return -1;
     }
-    
+    p->writeback=true;
     p->file = map->file;
     p->file_offset = offset;
     if(length >= PGSIZE)

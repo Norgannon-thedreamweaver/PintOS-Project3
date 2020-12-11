@@ -67,6 +67,7 @@ page_alloc (void *vaddr, bool writable)
   p->file=NULL;
   p->file_bytes=0;
   p->file_offset=0;
+  p->writeback=false;
   
   if (hash_insert (t->pages, &p->hash_elem) != NULL){
     /* Already mapped. */
@@ -174,7 +175,7 @@ page_swap_out(struct page *p){
   bool dirty = pagedir_is_dirty (p->thread->pagedir, p->upage);
 
   uninstall_page(p->upage);
-  if(dirty && p->file!=NULL){
+  if(dirty && p->file!=NULL&&p->writeback){
     bool has_lock=lock_held_by_current_thread(&file_lock);
     if(!has_lock)
       lock_acquire(&file_lock);

@@ -22,7 +22,7 @@ struct page {
     off_t file_offset;          /* Offset in file. */
     off_t file_bytes;           /* Bytes to read/write, 1...PGSIZE. */
 
-    bool private;
+    bool writeback;
 };
 
 void destroy_page (struct hash_elem *p_, void *aux);
