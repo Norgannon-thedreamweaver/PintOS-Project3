@@ -57,7 +57,7 @@ frame_find_victim(){
     size_t i;
     int j;
     for(j=0;j<2;j++){
-        for(i=0,e=frames_ptr;i<len;e=list_next (e)){
+        for(i=0,e=frames_ptr;i<len;e=list_next (e),i++){
             if(e == list_end (&frames))
                 e = list_begin (&frames);
     
@@ -76,7 +76,7 @@ frame_find_victim(){
             }
         }
     
-        for(i=0,e=frames_ptr;i<len;e=list_next (e)){
+        for(i=0,e=frames_ptr;i<len;e=list_next (e),i++){
             if(e == list_end (&frames))
                 e = list_begin (&frames);
     

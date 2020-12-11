@@ -141,8 +141,10 @@ page_swap_in(struct page *p){
 
 bool
 page_fault_handler(void *fault_addr){
-  if (thread_current ()->pages == NULL)
+  if (thread_current ()->pages == NULL){
     return false;
+  }
+    
 
   struct page *p=find_page_by_vaddr(fault_addr);
 
@@ -173,12 +175,13 @@ page_swap_out(struct page *p){
     lock_acquire(&file_lock);
     file_write_at(p->file,p->frame->base, p->file_bytes, p->file_offset);
     lock_release(&file_lock);
-    palloc_free_page (p->upage);
+    palloc_free_page (p->frame->base);
     frame_free(p->frame);
     p->frame=NULL;
+    return;
   }
   if(swap_out(p)){
-    palloc_free_page (p->upage);
+    palloc_free_page (p->frame->base);
     frame_free(p->frame);
     p->frame=NULL;
   }
