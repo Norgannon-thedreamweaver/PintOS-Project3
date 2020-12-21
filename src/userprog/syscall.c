@@ -261,6 +261,15 @@ mmap (int fd, void *addr){
     free (map);
     return -1;
   }
+  int pg_cnt=length/PGSIZE;
+  if(length%PGSIZE!=0)
+    pg_cnt+=1;
+  for(int i=0;i<pg_cnt;i++){
+    if(find_page_by_vaddr(addr+i*PGSIZE)!=NULL){
+      free (map);
+      return -1;
+    }
+  }
 
   map->mapid=current_thread->max_mapid++;
   current_thread->map_cnt++;
