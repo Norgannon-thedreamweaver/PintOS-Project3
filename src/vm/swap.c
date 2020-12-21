@@ -15,6 +15,7 @@ void
 swap_init ()
 {    
     lock_init (&swap_lock);
+    lock_init (&evict_lock);
     swap_device = block_get_role (BLOCK_SWAP);
     if (swap_device == NULL){
       printf ("get swap device fail\n");
@@ -37,9 +38,6 @@ swap_in (struct page *p)
     ASSERT (p->frame->thread==thread_current());
     ASSERT (p->sector != NO_SECTOR);
 
-    bool has_lock=lock_held_by_current_thread(&file_lock);
-    if(!has_lock)
-      lock_acquire(&file_lock);
 
     lock_acquire (&swap_lock);
     for (i=0;i<PAGE_SECTORS;i++){
@@ -49,8 +47,6 @@ swap_in (struct page *p)
     bitmap_reset (swap_bitmap, p->sector / PAGE_SECTORS);
     p->sector = NO_SECTOR;
     lock_release (&swap_lock);
-    if(!has_lock)
-          lock_release(&file_lock);
 }
 
 /* Swaps out page P, which must have a locked frame. */
@@ -61,16 +57,11 @@ swap_out (struct page *p)
     size_t i;
 
     ASSERT (p->frame != NULL);
-    bool has_lock=lock_held_by_current_thread(&file_lock);
-    //ASSERT (p->frame->thread==thread_current());
-    if(!has_lock)
-      lock_acquire(&file_lock);
+    
     lock_acquire (&swap_lock);
     swap_sector = bitmap_scan_and_flip (swap_bitmap, 0, 1, false);
     if (swap_sector == BITMAP_ERROR){
         lock_release (&swap_lock);
-        if(!has_lock)
-          lock_release(&file_lock);
         return false;
     }
 
@@ -81,8 +72,6 @@ swap_out (struct page *p)
                    p->frame->base + i * BLOCK_SECTOR_SIZE);
     }
     lock_release (&swap_lock);
-    if(!has_lock)
-      lock_release(&file_lock);
     
     return true;
 }

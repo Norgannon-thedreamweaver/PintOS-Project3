@@ -12,6 +12,8 @@
 
 #define NO_SECTOR 4294967295U
 
+struct lock evict_lock;
+
 void swap_init (void);
 void swap_in (struct page *);
 bool swap_out (struct page *);

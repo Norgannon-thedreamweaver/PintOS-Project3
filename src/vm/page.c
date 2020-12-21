@@ -78,6 +78,7 @@ page_alloc (void *vaddr, bool writable)
 }
 void
 page_free(void *vaddr){
+  lock_acquire(&evict_lock);
   struct page *p = find_page_by_vaddr(vaddr);
   if(p==NULL)
     return;
@@ -90,6 +91,7 @@ page_free(void *vaddr){
   }
   hash_delete(thread_current()->pages,&p->hash_elem);
   free(p);
+  lock_release(&evict_lock);
 }
 
 bool
@@ -121,24 +123,30 @@ page_swap_in(struct page *p){
   f->page=p;
   p->frame=f;
   install_page(p->upage,kpage,p->writable);
-  
+
+  lock_acquire(&evict_lock);
   if(p->sector!=NO_SECTOR){
     swap_in(p);
+    lock_release(&evict_lock);
     return true;
   }
   else if(p->file!=NULL){
     bool has_lock=lock_held_by_current_thread(&file_lock);
     if(!has_lock)
       lock_acquire(&file_lock);
+    
     off_t read_bytes = file_read_at (p->file, p->frame->base,p->file_bytes, p->file_offset);
+    memset (p->frame->base + read_bytes, 0, PGSIZE - read_bytes);
+    
     if(!has_lock)
       lock_release(&file_lock);
-    memset (p->frame->base + read_bytes, 0, PGSIZE - read_bytes);
+    lock_release(&evict_lock);
     if (read_bytes != p->file_bytes)
       return false;
   }
   else{
     memset (p->frame->base, 0, PGSIZE);
+    lock_release(&evict_lock);
   }
   return true;
 }
@@ -201,7 +209,9 @@ page_swap_out_clock(){
   struct frame* victim=frame_find_victim();
   if(victim==NULL)
     PANIC("NO VICTIM");
+  lock_acquire(&evict_lock);
   page_swap_out(victim->page);
+  lock_release(&evict_lock);
 }
 
 
