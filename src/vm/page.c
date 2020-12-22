@@ -131,15 +131,11 @@ page_swap_in(struct page *p){
     return true;
   }
   else if(p->file!=NULL){
-    bool has_lock=lock_held_by_current_thread(&file_lock);
-    if(!has_lock)
-      lock_acquire(&file_lock);
     
     off_t read_bytes = file_read_at (p->file, p->frame->base,p->file_bytes, p->file_offset);
     memset (p->frame->base + read_bytes, 0, PGSIZE - read_bytes);
     
-    if(!has_lock)
-      lock_release(&file_lock);
+    
     lock_release(&evict_lock);
     if (read_bytes != p->file_bytes)
       return false;
@@ -184,12 +180,8 @@ page_swap_out(struct page *p){
 
   uninstall_page(p->upage);
   if(dirty && p->file!=NULL&&p->writeback){
-    bool has_lock=lock_held_by_current_thread(&file_lock);
-    if(!has_lock)
-      lock_acquire(&file_lock);
     file_write_at(p->file,p->frame->base, p->file_bytes, p->file_offset);
-    if(!has_lock)
-      lock_release(&file_lock);
+    
     palloc_free_page (p->frame->base);
     frame_free(p->frame);
     p->frame=NULL;
